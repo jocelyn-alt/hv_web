@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1DOC MedOps Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}
+    .dropdown-menu{display:none}.dropdown-menu.open{display:block}
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <header class="bg-teal-600 text-white h-14 flex items-center px-6 shadow-md sticky top-0 z-30">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow"><span class="text-teal-600 font-bold text-lg">1</span></div>
+      <span class="font-bold text-lg tracking-wide">1DOC MEDOPS</span>
+    </div>
+    <div class="flex-1"></div>
+    <div class="flex items-center gap-6">
+      <span class="text-teal-100 flex items-center gap-2 text-sm"><span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span><span id="headerClinic">Mediline Serangoon</span></span>
+      <div class="h-6 w-px bg-teal-400"></div>
+      <div class="flex items-center gap-3">
+        <div class="text-right"><p class="text-sm font-medium">Admin</p><p class="text-xs text-teal-200">MedOps Team</p></div>
+        <div class="w-9 h-9 bg-teal-500 rounded-full flex items-center justify-center border-2 border-teal-400">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="bg-white border-b border-gray-200 shadow-sm sticky top-14 z-20"><div class="flex overflow-x-auto" id="navTabs"></div></div>
+  <div class="bg-gradient-to-r from-white to-gray-50 border-b border-gray-200 px-6 py-5">
+    <h1 class="text-2xl font-bold text-gray-900" id="pageTitle">Daily Summary</h1>
+    <div class="flex items-center gap-4 mt-4">
+      <span class="text-sm font-medium text-gray-500">Viewing:</span>
+      <div id="pills"></div>
+      <div class="relative">
+        <button onclick="toggleDropdown()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all">Select Clinics
+          <svg class="w-4 h-4 text-gray-400" id="chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="dropdown" class="dropdown-menu absolute top-full left-0 mt-2 w-80 bg-white rounded-xl border border-gray-200 shadow-xl z-50">
+          <div class="p-3 border-b border-gray-100 bg-gray-50">
+            <div class="relative">
+              <input type="text" id="search" placeholder="Search clinics..." oninput="render();updateClearBtn()" class="w-full px-3 py-2 pr-8 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+              <button id="clearSearchBtn" onclick="clearSearch()" class="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 bg-gray-300 hover:bg-gray-400 rounded-full flex items-center justify-center text-white text-xs transition-colors hidden">✕</button>
+            </div>
+          </div>
+          <div class="max-h-72 overflow-y-auto" id="clinicList"></div>
+          <div class="p-3 border-t border-gray-100 bg-gray-50 flex justify-between">
+            <span class="text-xs text-gray-500" id="count"></span>
+            <button onclick="toggleDropdown()" class="px-3 py-1.5 bg-teal-500 text-white rounded-lg text-sm font-medium">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="dateBar" class="bg-gradient-to-r from-teal-50 via-white to-emerald-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 bg-gradient-to-br from-teal-100 to-teal-50 border border-teal-200 rounded-2xl flex items-center justify-center shadow-sm">
+        <svg class="w-7 h-7 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <div><span class="font-bold text-gray-900 text-xl">Yesterday's Closing Summary</span><p class="text-sm text-gray-500 mt-0.5">Monday, 19 Jan 2026 • Today is Tuesday, 20 Jan 2026</p></div>
+    </div>
+    <div class="flex items-center gap-3 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 text-emerald-700 px-5 py-2.5 rounded-full shadow-sm"><span class="text-xl">🎉</span><span class="font-bold text-sm">Great Performance!</span></div>
+  </div>
+  <div class="p-6" id="content"></div>
+  <div class="fixed bottom-4 right-4 bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 text-teal-700 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"><span class="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></span>Live Data</div>
+
+<script>
+let tab='daily',selected=['msg'],open=false;
+const clinics=[{id:'all',name:'All Clinics',short:'ALL'},{id:'msg',name:'Mediline Serangoon',short:'MSG'},{id:'mmp',name:'Mediline Medipoint',short:'MMP'},{id:'rdh',name:'RDH Clinic',short:'RDH'},{id:'tpy',name:'Toa Payoh Clinic',short:'TPY'},{id:'amk',name:'Ang Mo Kio Clinic',short:'AMK'},{id:'bd',name:'Bedok Clinic',short:'BD'},{id:'tp',name:'Tampines Clinic',short:'TP'},{id:'wl',name:'Woodlands Clinic',short:'WL'},{id:'jw',name:'Jurong West Clinic',short:'JW'},{id:'cck',name:'Choa Chu Kang Clinic',short:'CCK'}];
+const data={
+  msg:{mtd:229820.62,target:200000,daily:6450,variance:22958.29,today:10972.21,patients:70,doctors:[{name:'Dr Eugene Loke',initials:'EL',patients:56,revenue:10080.31},{name:'Dr Low',initials:'LW',patients:14,revenue:891.79}],payments:{app:14236.55,nets:59110.20,paynow:89630.88,tpa:49210.45,chas:14480.55,healthiersg:3151.99},mtdFromClosing:236820.63},
+  mmp:{mtd:103571.94,target:150000,daily:4838.70,variance:11636.64,today:8738.61,patients:66,doctors:[{name:'Dr Lee Chien Nien',initials:'LCN',patients:31,revenue:4951.18},{name:'Dr Andre Ng',initials:'AN',patients:35,revenue:3787.43}],payments:{paynow:3117.08,nets:927.98,app:356.99,cash:561.51,tpa:2602.89,chas:491.01,healthiersg:825.50},mtdFromClosing:106500.00},
+  rdh:{mtd:103598.26,target:150000,daily:5770,variance:17048.26,today:14041.14,patients:64,doctors:[{name:'Dr Nigel',initials:'NG',patients:64,revenue:14041.14}],payments:{cash:441.27,amex:94.50,nets:239.03,visa:2646.94,mastercard:2862.34,paynow:399.03,app:1373.40,copay:8135.89,healthiersg:1276.17},mtdFromClosing:106820.63}
+};
+clinics.forEach((c,i)=>{if(!data[c.id])data[c.id]={mtd:80000+i*5000,target:150000,daily:4838,variance:10000+i*1000,today:5000+i*500,patients:30+i*3,doctors:[{name:'Dr Smith',initials:'SM',patients:30+i*3,revenue:5000+i*500}],payments:{paynow:2000,nets:1000,app:1500,copay:1000,tpa:500,chas:200}}});
+const tabs=[{id:'daily',label:'Daily Summary',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'},{id:'revenue',label:'Revenue Target',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke-width="2"/><circle cx="12" cy="12" r="2" stroke-width="2"/></svg>'},{id:'flow',label:'Patient Flow',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>'},{id:'compare',label:'Compare Performance',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>'},{id:'services',label:'Services',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 4.5l-1-1m1 1l-1 1m1-1L17 7m0 0l-3 3m3-3l1-1M14 10l-7 7m0 0l-2 2m2-2l2 2m-2-2H5m2 2v-2"/></svg>'},{id:'healthiersg',label:'HSG',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>'},{id:'whatsapp',label:'WhatsApp',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>'},{id:'askeva',label:'Ask Eva',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>'},{id:'settings',label:'Settings',icon:'<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>'}];
+const services=[
+  {name:'Influenza Vaccination',icon:'💉',today:12,week:68,mtd:185,trend:'+15%'},
+  {name:'Shingles Vaccination',icon:'🛡️',today:3,week:14,mtd:39,trend:'+8%'},
+  {name:'Health Screening',icon:'📋',today:7,week:33,mtd:92,trend:'+22%'}
+];
+const promos=[
+  {tag:'NKF-RENAL',name:'NKF Renal Screening',signups:26,done:18,percent:69},
+  {tag:'BUZUD-CGM',name:'BUZUD CGM Promo',signups:33,done:25,percent:76}
+];
+const payLabels={paynow:'PayNow',nets:'NETS',app:'1doc App',copay:'Co-pay',cash:'Cash',tpa:'TPA',chas:'CHAS',visa:'Visa',mastercard:'MC',amex:'AMEX',healthiersg:'HealthierSG'};
+const payColors={paynow:'bg-teal-400',nets:'bg-blue-400',app:'bg-violet-400',copay:'bg-amber-400',cash:'bg-emerald-400',tpa:'bg-orange-400',chas:'bg-pink-400',visa:'bg-indigo-400',mastercard:'bg-red-400',amex:'bg-sky-400',healthiersg:'bg-green-400'};
+const fmt=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function get(){
+  // Handle empty selection
+  if(selected.length===0) return{
+    mtd:0, target:0, trial:0, variance:0, today:0, daily:0, patients:0, doctors:[], 
+    payments:Object.keys(payLabels).reduce((a,k)=>{a[k]=0;return a},{}), mtdFromClosing:0
+  };
+  if(selected.length===1 && !selected.includes('all'))return data[selected[0]];
+  // If 'all' is selected, aggregate all real clinics
+  const realClinics = clinics.filter(c => c.id !== 'all').map(c => c.id);
+  const activeIds = selected.includes('all') ? realClinics.filter(id => data[id]) : selected;
+  return{
+    mtd:activeIds.reduce((s,id)=>s+(data[id]?.mtd||0),0),
+    target:activeIds.reduce((s,id)=>s+(data[id]?.target||0),0),
+    trial:activeIds.reduce((s,id)=>s+(data[id]?.trial||Math.round((data[id]?.target||0)*1.15)),0),
+    variance:activeIds.reduce((s,id)=>s+(data[id]?.variance||0),0),
+    today:activeIds.reduce((s,id)=>s+(data[id]?.today||0),0),
+    daily:activeIds.reduce((s,id)=>s+(data[id]?.daily||0),0),
+    patients:activeIds.reduce((s,id)=>s+(data[id]?.patients||0),0),
+    doctors:activeIds.flatMap(id=>data[id]?.doctors||[]),
+    payments:Object.keys(payLabels).reduce((a,k)=>{a[k]=activeIds.reduce((s,id)=>s+(data[id]?.payments?.[k]||0),0);return a},{}),
+    mtdFromClosing:activeIds.reduce((s,id)=>s+(data[id]?.mtdFromClosing||data[id]?.mtd||0),0)
+  };
+}
+
+function toggleDropdown(){open=!open;document.getElementById('dropdown').classList.toggle('open',open);document.getElementById('chevron').style.transform=open?'rotate(180deg)':'';}
+function clearSearch(){
+  const searchInput = document.getElementById('search');
+  if(searchInput){
+    searchInput.value = '';
+    searchInput.focus();
+    render();
+    updateClearBtn();
+  }
+}
+function updateClearBtn(){
+  const searchInput = document.getElementById('search');
+  const clearBtn = document.getElementById('clearSearchBtn');
+  if(searchInput && clearBtn){
+    if(searchInput.value.length > 0){
+      clearBtn.classList.remove('hidden');
+    }else{
+      clearBtn.classList.add('hidden');
+    }
+  }
+}
+function removeClinic(id){
+  selected = selected.filter(x => x !== id);
+  render();
+}
+function clearAllClinics(){
+  selected = [];
+  render();
+}
+function toggle(id){
+  if(id==='all'){
+    // If clicking All, toggle between all selected and none
+    if(selected.includes('all')){
+      selected=[];
+    }else{
+      selected=['all'];
+    }
+  }else{
+    // If clicking individual clinic
+    if(selected.includes('all')){
+      // Deselect 'all' and select just this clinic
+      selected=[id];
+    }else if(selected.includes(id)){
+      selected=selected.filter(x=>x!==id);
+    }else{
+      selected=[...selected,id];
+    }
+  }
+  render();
+}
+function setTab(t){tab=t;document.getElementById('dateBar').style.display=t==='daily'?'flex':'none';render();}
+function updateTarget(id,value){
+  data[id].target=parseInt(value)||0;
+  if(tab==='revenue')updateRevenueCards();
+  else render();
+}
+function updateTrial(id,value){
+  data[id].trial=parseInt(value)||0;
+  if(tab==='revenue')updateRevenueCards();
+  else render();
+}
+function updateRevenueCards(){
+  const d=get();
+  const targetVal=selected.length===1?data[selected[0]].target:selected.reduce((s,id)=>s+(data[id]?.target||0),0);
+  const trialVal=selected.length===1?(data[selected[0]].trial||Math.round(targetVal*1.15)):selected.reduce((s,id)=>s+(data[id]?.trial||Math.round((data[id]?.target||0)*1.15)),0);
+  const mtd=d.mtd,gap=Math.max(0,targetVal-mtd),delta=trialVal-targetVal;
+  document.getElementById('card-target').textContent='S$'+Math.round(targetVal/1000)+'k';
+  document.getElementById('card-gap').textContent='S$'+Math.round(gap/1000)+'k';
+  document.getElementById('card-trial').textContent='S$'+Math.round(trialVal/1000)+'k';
+  document.getElementById('card-delta').textContent='S$'+Math.round(delta/1000)+'k';
+}
+function resetTargets(){data.msg.target=200000;data.mmp.target=150000;data.rdh.target=150000;data.msg.trial=230000;data.mmp.trial=172500;data.rdh.trial=172500;render();}
+function selectAll(){selected=['all'];render();}
+function deselectAll(){selected=['msg'];render();}
+function updatePaymentView(){
+  const view=document.getElementById('paymentViewSelect').value;
+  const datePicker=document.getElementById('paymentDatePicker');
+  const label=document.getElementById('paymentViewLabel');
+  if(view==='day'){
+    datePicker.classList.remove('hidden');
+    const dateVal=datePicker.value;
+    const dateObj=new Date(dateVal);
+    label.textContent=dateObj.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  }else{
+    datePicker.classList.add('hidden');
+    label.textContent='Month-to-Date';
+  }
+}
+
+function copyWhatsAppSummary(){
+  const content = document.getElementById('whatsappContent');
+  if(content){
+    const text = content.innerText;
+    navigator.clipboard.writeText(text).then(()=>{
+      const btn = event.target.closest('button');
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+      btn.classList.remove('bg-emerald-500','hover:bg-emerald-600');
+      btn.classList.add('bg-emerald-600');
+      setTimeout(()=>{
+        btn.innerHTML = originalHTML;
+        btn.classList.add('bg-emerald-500','hover:bg-emerald-600');
+        btn.classList.remove('bg-emerald-600');
+      }, 2000);
+    });
+  }
+}
+
+function render(){
+  const d=get(),search=document.getElementById('search')?.value?.toLowerCase()||'';
+  let list=clinics.filter(c=>c.name.toLowerCase().includes(search)||c.short.toLowerCase().includes(search));
+  // Keep 'all' at the top, then selected clinics, then unselected (sorted alphabetically)
+  const allClinic = list.find(c=>c.id==='all');
+  const otherClinics = list.filter(c=>c.id!=='all');
+  const selectedOthers = otherClinics.filter(c=>selected.includes(c.id)).sort((a,b)=>a.name.localeCompare(b.name));
+  const unselectedOthers = otherClinics.filter(c=>!selected.includes(c.id)).sort((a,b)=>a.name.localeCompare(b.name));
+  list = allClinic ? [allClinic, ...selectedOthers, ...unselectedOthers] : [...selectedOthers, ...unselectedOthers];
+  const colors=['bg-purple-100 border-purple-200 text-purple-600','bg-teal-50 border-teal-100 text-teal-600','bg-purple-50 border-purple-100 text-purple-600','bg-orange-50 border-orange-100 text-orange-600','bg-blue-50 border-blue-100 text-blue-600','bg-pink-50 border-pink-100 text-pink-600','bg-emerald-50 border-emerald-100 text-emerald-600'];
+  
+  document.getElementById('navTabs').innerHTML=tabs.map(t=>`<button onclick="setTab('${t.id}')" class="flex items-center gap-2 px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${tab===t.id?'border-teal-500 text-teal-600 bg-teal-50':'border-transparent text-gray-500 hover:bg-gray-50'}">${t.icon}${t.label}</button>`).join('');
+  document.getElementById('pageTitle').textContent=tabs.find(t=>t.id===tab)?.label||'';
+  document.getElementById('headerClinic').textContent=selected.length===0?'No Clinic Selected':(selected.includes('all')?'All Clinics':(selected.length===1?clinics.find(c=>c.id===selected[0])?.name:`${selected.length} Clinics`));
+  document.getElementById('pills').innerHTML=selected.length===0?`<span class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-50 text-gray-500 rounded-xl text-sm font-medium border border-gray-200 shadow-sm italic">No clinic selected</span>`:(selected.includes('all')?`<span class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 rounded-xl text-sm font-bold border border-purple-200 shadow-sm">🏢 ALL<button onclick="removeClinic('all')" class="ml-1 w-5 h-5 rounded-full bg-purple-200 hover:bg-purple-300 flex items-center justify-center text-purple-600 transition-colors">×</button></span>`:(selected.length>3?`<span class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-100 to-teal-50 text-teal-700 rounded-xl text-sm font-bold border border-teal-200 shadow-sm">${selected.length} Clinics<button onclick="clearAllClinics()" class="ml-1 w-5 h-5 rounded-full bg-teal-200 hover:bg-teal-300 flex items-center justify-center text-teal-600 transition-colors">×</button></span>`:selected.map(id=>{const c=clinics.find(x=>x.id===id);return`<span class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-100 to-teal-50 text-teal-700 rounded-xl text-sm font-bold border border-teal-200 shadow-sm">${c?.short}<button onclick="removeClinic('${id}')" class="ml-1 w-5 h-5 rounded-full bg-teal-200 hover:bg-teal-300 flex items-center justify-center text-teal-600 transition-colors">×</button></span>`}).join(' ')));
+  document.getElementById('clinicList').innerHTML=list.map((c,i)=>{
+    const isAll = c.id==='all';
+    const isSelected = selected.includes(c.id);
+    const bgColor = isAll ? 'bg-purple-100 border-purple-200 text-purple-600' : colors[(i-1)%6];
+    return`<button onclick="toggle('${c.id}')" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 border-b ${isAll?'border-gray-200 bg-gradient-to-r from-purple-50 to-white':'border-gray-50'}"><div class="w-5 h-5 rounded border-2 flex items-center justify-center ${isSelected?(isAll?'bg-purple-500 border-purple-500':'bg-teal-500 border-teal-500'):'border-gray-300'}">${isSelected?'<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>':''}</div><div class="w-9 h-9 rounded-lg border flex items-center justify-center font-bold text-xs ${bgColor}">${isAll?'🏢':c.short}</div><span class="text-sm font-medium ${isAll?'text-purple-700':'text-gray-900'}">${c.name}</span></button>`}).join('');
+  document.getElementById('count').textContent=selected.includes('all')?'All clinics selected':`${selected.length} of ${clinics.length-1} selected`;
+  
+  // Show/hide dateBar based on tab
+  const dateBar=document.getElementById('dateBar');
+  if(['daily','revenue'].includes(tab)){
+    dateBar.style.display='flex';
+  }else{
+    dateBar.style.display='none';
+  }
+
+  if(tab==='daily'){
+    const gapToTarget = d.target - d.mtd;
+    const isAbove = gapToTarget <= 0;
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-gradient-to-br from-white to-teal-50 rounded-2xl p-6 border border-teal-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-teal-100 border border-teal-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1"/></svg></div><span class="text-sm font-medium text-gray-500">MTD Revenue</span></div>
+            <p class="text-3xl font-bold text-gray-900">S$${fmt(d.mtd)}</p>
+            <p class="text-sm ${isAbove ? 'text-emerald-600' : 'text-amber-600'} mt-2 font-medium">${isAbove ? '+S$'+fmt(Math.abs(gapToTarget))+' above target' : 'S$'+fmt(gapToTarget)+' to target'}</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-6 border border-purple-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-purple-100 border border-purple-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg></div><span class="text-sm font-medium text-gray-500">Patients Yesterday</span></div>
+            <p class="text-3xl font-bold text-gray-900">${d.patients}</p>
+            <p class="text-sm text-purple-600 mt-2 font-medium">${d.doctors.length} doctors on duty</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-blue-100 border border-blue-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span class="text-sm font-medium text-gray-500">Today's Revenue</span></div>
+            <p class="text-3xl font-bold text-gray-900">S$${fmt(d.today)}</p>
+            <p class="text-sm text-blue-600 mt-2 font-medium">Daily target: S$${fmt(d.daily)}</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-emerald-50 rounded-2xl p-6 border border-emerald-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-emerald-100 border border-emerald-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke-width="2"/><circle cx="12" cy="12" r="2" stroke-width="2"/></svg></div><span class="text-sm font-medium text-gray-500">Target Progress</span></div>
+            <p class="text-3xl font-bold text-gray-900">${((d.mtd/d.target)*100).toFixed(1)}%</p>
+            <div class="mt-3 bg-gray-200 rounded-full h-3"><div class="bg-gradient-to-r from-teal-400 to-emerald-500 h-full rounded-full transition-all" style="width:${Math.min((d.mtd/d.target)*100,100)}%"></div></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white"><h3 class="font-semibold text-gray-800 flex items-center gap-2"><span class="w-2 h-2 bg-teal-500 rounded-full"></span>Doctor Performance</h3></div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${d.doctors.map((doc,i)=>{const bgColors=['bg-teal-100 border-teal-200','bg-purple-100 border-purple-200','bg-blue-100 border-blue-200'];const txtColors=['text-teal-600','text-purple-600','text-blue-600'];return`<div class="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:shadow-sm transition-all"><div class="w-14 h-14 ${bgColors[i%3]} border rounded-2xl flex items-center justify-center ${txtColors[i%3]} font-bold text-lg">${doc.initials}</div><div class="flex-1"><p class="font-semibold text-gray-900">${doc.name}</p><p class="text-sm text-gray-500">${doc.patients} patients</p></div><div class="text-right"><p class="font-bold text-xl text-gray-900">S$${fmt(doc.revenue)}</p></div></div>`}).join('')}</div>
+        </div>
+        <div class="bg-gradient-to-br from-blue-50 to-white rounded-2xl border border-blue-100 shadow-sm">
+          <div class="px-6 py-4 border-b border-blue-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2"><span class="text-lg">💳</span>Payment Breakdown (MTD)</h3>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-500">View:</span>
+              <div class="relative">
+                <select id="paymentViewSelect" onchange="updatePaymentView()" class="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-9 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer hover:bg-gray-50 transition-colors">
+                  <option value="mtd">Month-to-Date</option>
+                  <option value="day">Day</option>
+                </select>
+                <svg class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <input type="date" id="paymentDatePicker" class="hidden border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white hover:bg-gray-50 transition-colors cursor-pointer" value="${new Date().toISOString().split('T')[0]}" onchange="updatePaymentView()">
+            </div>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="paymentCardsGrid">
+              ${(()=>{
+                const total=Object.values(d.payments).reduce((a,b)=>a+b,0);
+                const cardStyles={
+                  app:{bg:'bg-purple-50',border:'border-purple-100',dot:'bg-purple-500',text:'text-purple-600'},
+                  nets:{bg:'bg-blue-50',border:'border-blue-100',dot:'bg-blue-500',text:'text-blue-600'},
+                  paynow:{bg:'bg-emerald-50',border:'border-emerald-100',dot:'bg-emerald-500',text:'text-emerald-600'},
+                  tpa:{bg:'bg-amber-50',border:'border-amber-100',dot:'bg-amber-500',text:'text-amber-600'},
+                  chas:{bg:'bg-pink-50',border:'border-pink-100',dot:'bg-pink-500',text:'text-pink-600'},
+                  healthiersg:{bg:'bg-cyan-50',border:'border-cyan-100',dot:'bg-cyan-500',text:'text-cyan-600'},
+                  cash:{bg:'bg-green-50',border:'border-green-100',dot:'bg-green-500',text:'text-green-600'},
+                  visa:{bg:'bg-indigo-50',border:'border-indigo-100',dot:'bg-indigo-500',text:'text-indigo-600'},
+                  mastercard:{bg:'bg-orange-50',border:'border-orange-100',dot:'bg-orange-500',text:'text-orange-600'},
+                  amex:{bg:'bg-slate-50',border:'border-slate-100',dot:'bg-slate-500',text:'text-slate-600'},
+                  copay:{bg:'bg-rose-50',border:'border-rose-100',dot:'bg-rose-500',text:'text-rose-600'}
+                };
+                const defaultStyle={bg:'bg-gray-50',border:'border-gray-100',dot:'bg-gray-500',text:'text-gray-600'};
+                return Object.entries(d.payments).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+                  const pct=((v/total)*100).toFixed(1);
+                  const style=cardStyles[k]||defaultStyle;
+                  return`
+                    <div class="${style.bg} ${style.border} border rounded-2xl p-5">
+                      <div class="flex items-center gap-2 mb-3">
+                        <span class="w-3 h-3 ${style.dot} rounded-full"></span>
+                        <span class="text-sm font-medium ${style.text}">${payLabels[k]||k}</span>
+                      </div>
+                      <p class="text-2xl font-bold text-gray-900">S$${fmt(v)}</p>
+                      <p class="text-sm text-gray-500 mt-1">${pct}% of total</p>
+                    </div>
+                  `;
+                }).join('');
+              })()}
+            </div>
+          </div>
+        </div>
+        <div class="bg-gradient-to-br from-emerald-50 to-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-emerald-100 bg-gradient-to-r from-emerald-100 to-emerald-50 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-3">
+              <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-sm">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              </div>
+              <div>
+                <span>WhatsApp Auto-Summary</span>
+                <p class="text-xs text-gray-500 font-normal mt-0.5">Ready to copy & paste</p>
+              </div>
+            </h3>
+            <button onclick="copyWhatsAppSummary()" class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors flex items-center gap-2 shadow-sm">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              Copy Message
+            </button>
+          </div>
+          <div class="p-6">
+            ${(()=>{
+              const avgWait = d.patients > 100 ? 12.0 : (d.patients > 50 ? 15.0 : 18.0);
+              const throughput = d.patients > 100 ? 28.0 : (d.patients > 50 ? 31.5 : 35.0);
+              const trialTarget = d.trial || Math.round(d.target * 1.15);
+              const trialGap = Math.max(0, trialTarget - d.mtd);
+              const services = [{price:60},{price:45},{price:280},{price:180},{price:25},{price:90}];
+              const totalExtraServices = services.reduce((sum, s) => sum + Math.ceil(trialGap / s.price / services.length), 0);
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              const dateStr = yesterday.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/');
+              const pctOfBase = ((d.mtd/d.target)*100).toFixed(1);
+              const clinicName = selected.includes('all') ? 'All Clinics' : (selected.length === 1 ? clinics.find(c=>c.id===selected[0])?.name : selected.length + ' Clinics');
+              const totalPayments = Object.values(d.payments).reduce((a,b)=>a+b,0);
+              return `
+            <div id="whatsappContent" class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm text-sm text-gray-800 leading-loose whitespace-pre-wrap"><b>1doc MedOPs Daily Summary</b>
+📅 ${dateStr} | ${clinicName}
+
+💰 <b>Revenue</b>
+Today: S$${fmt(d.today)}
+MTD: S$${fmt(d.mtd)}
+MTD (Closing): S$${fmt(d.mtdFromClosing || d.mtd)}
+👥 Patients: ${d.patients}
+👨‍⚕️ Doctors: ${d.doctors.length}
+
+💳 <b>Payment Breakdown (MTD)</b>
+${Object.entries(d.payments).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`• ${payLabels[k]}: S$${fmt(v)} (${((v/totalPayments)*100).toFixed(1)}%)`).join('\n')}
+Total: S$${fmt(totalPayments)}
+
+⏱️ <b>Topline KPI</b>
+Avg wait: ${avgWait.toFixed(1)} min
+Throughput: ${throughput.toFixed(1)} min
+
+🎯 <b>Revenue Goal</b>
+Target: S$${fmt(d.target)} (${pctOfBase}% achieved)
+Trial: S$${fmt(trialTarget)}
+${d.mtd >= d.target ? '✅ Target exceeded!' : '→ S$' + fmt(d.target - d.mtd) + ' more to target'}
+${trialGap > 0 ? '→ +' + totalExtraServices + ' extra services to trial' : '🎉 Trial target exceeded!'}
+
+<span class="text-gray-400 italic">Auto-generated by 1doc MedOPs</span></div>`;
+            })()}
+          </div>
+        </div>
+      </div>`;
+  }else if(tab==='revenue'){
+    const d=get();
+    const targetVal=selected.length===1?data[selected[0]].target:selected.reduce((s,id)=>s+(data[id]?.target||0),0);
+    const trialVal=selected.length===1?(data[selected[0]].trial||Math.round(targetVal*1.15)):selected.reduce((s,id)=>s+(data[id]?.trial||Math.round((data[id]?.target||0)*1.15)),0);
+    const mtd=d.mtd,gap=Math.max(0,targetVal-mtd),delta=trialVal-targetVal;
+    const daysLeft=31-new Date().getDate();
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-gradient-to-br from-white to-teal-50 rounded-2xl p-6 border border-teal-100 shadow-sm text-center">
+            <div class="w-14 h-14 bg-teal-100 border border-teal-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-2xl">🎯</span></div>
+            <p class="text-sm text-gray-500 font-medium">Target</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="card-target">S$${Math.round(targetVal/1000)}k</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-6 border border-purple-100 shadow-sm text-center">
+            <div class="w-14 h-14 bg-purple-100 border border-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-2xl">📈</span></div>
+            <p class="text-sm text-gray-500 font-medium">MTD</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="card-mtd">S$${Math.round(mtd/1000)}k</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-100 shadow-sm text-center">
+            <div class="w-14 h-14 bg-blue-100 border border-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-2xl">📊</span></div>
+            <p class="text-sm text-gray-500 font-medium">Gap</p>
+            <p class="text-2xl font-bold ${mtd >= targetVal ? 'text-emerald-600' : 'text-amber-600'} mt-1" id="card-gap">${mtd >= targetVal ? '+S$'+Math.round((mtd-targetVal)/1000)+'k' : 'S$'+Math.round(gap/1000)+'k'}</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-emerald-50 rounded-2xl p-6 border border-emerald-100 shadow-sm text-center">
+            <div class="w-14 h-14 bg-emerald-100 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-2xl">🚀</span></div>
+            <p class="text-sm text-gray-500 font-medium">Trial</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="card-trial">S$${Math.round(trialVal/1000)}k</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-amber-50 rounded-2xl p-6 border border-amber-100 shadow-sm text-center">
+            <div class="w-14 h-14 bg-amber-100 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-2xl">⚡</span></div>
+            <p class="text-sm text-gray-500 font-medium">Delta</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="card-delta">S$${Math.round(delta/1000)}k</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-rose-50 rounded-2xl p-6 border border-rose-100 shadow-sm text-center">
+            <div class="w-14 h-14 bg-rose-100 border border-rose-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-2xl">📅</span></div>
+            <p class="text-sm text-gray-500 font-medium">Days Left</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">${daysLeft}</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white"><h3 class="font-semibold text-gray-800 flex items-center gap-2"><span class="w-2 h-2 bg-teal-500 rounded-full"></span>Set Targets</h3></div>
+          <div class="p-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${selected.map((id,i)=>{
+                const c=clinics.find(x=>x.id===id);
+                const bgColors=['bg-teal-100 border-teal-200','bg-purple-100 border-purple-200','bg-orange-100 border-orange-200','bg-blue-100 border-blue-200'];
+                const txtColors=['text-teal-600','text-purple-600','text-orange-600','text-blue-600'];
+                const gradients=['from-teal-50 to-white','from-purple-50 to-white','from-orange-50 to-white','from-blue-50 to-white'];
+                return`
+                <div class="p-5 bg-gradient-to-br ${gradients[i%4]} rounded-xl border border-gray-100">
+                  <div class="flex items-center gap-4 mb-5 pb-4 border-b border-gray-100">
+                    <div class="w-14 h-14 ${bgColors[i%4]} border rounded-2xl flex items-center justify-center ${txtColors[i%4]} font-bold text-lg shadow-sm">${c?.short}</div>
+                    <div><p class="font-bold text-gray-900 text-lg">${c?.short}</p><p class="text-sm text-gray-500">${c?.name}</p></div>
+                  </div>
+                  <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100">
+                      <label class="text-sm font-medium text-gray-600">Monthly Target</label>
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-400 text-sm">S$</span>
+                        <input type="number" value="${data[id]?.target||150000}" step="10000" min="0" 
+                          class="w-32 px-4 py-2.5 border border-gray-200 rounded-xl text-right font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                          oninput="updateTarget('${id}', this.value)">
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100">
+                      <label class="text-sm font-medium text-gray-600">Trial Target</label>
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-400 text-sm">S$</span>
+                        <input type="number" value="${data[id]?.trial||Math.round((data[id]?.target||150000)*1.15)}" step="10000" min="0" 
+                          class="w-32 px-4 py-2.5 border border-emerald-200 rounded-xl text-right font-bold text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50"
+                          oninput="updateTrial('${id}', this.value)">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `}).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-purple-100 border border-purple-200 rounded-xl flex items-center justify-center">
+                <span class="text-lg">🤖</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-800">AI-Estimated Additional Services Needed</h3>
+                <p class="text-xs text-gray-500">Based on current gap to targets</p>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
+                  <th class="px-5 py-3 font-medium">Service</th>
+                  <th class="px-5 py-3 font-medium text-center">Unit Price</th>
+                  <th class="px-5 py-3 font-medium text-center">Required (Base)</th>
+                  <th class="px-5 py-3 font-medium text-center">Additional (Trial)</th>
+                  <th class="px-5 py-3 font-medium text-center">Per Day</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100" id="services-table">
+                ${(()=>{
+                  const services=[
+                    {name:'Sick Review',price:60,icon:'🩺'},
+                    {name:'Influenza Vaccination',price:45,icon:'💉'},
+                    {name:'Shingles Vaccination',price:280,icon:'🛡️'},
+                    {name:'Health Screening Package',price:180,icon:'📋'},
+                    {name:'NKF Renal Screening',price:25,icon:'🫘'},
+                    {name:'Buzud CGM Promo',price:90,icon:'📊'}
+                  ];
+                  const baseGap=Math.max(0,targetVal-mtd);
+                  const trialGap=Math.max(0,trialVal-mtd);
+                  window.totalAdditionalUnits=0;
+                  return services.map((s,i)=>{
+                    const required=Math.ceil(baseGap/s.price/services.length);
+                    const additional=Math.ceil(trialGap/s.price/services.length);
+                    window.totalAdditionalUnits+=additional;
+                    const perDay=Math.ceil(required/Math.max(daysLeft,1));
+                    const bgColors=['bg-teal-50 border-teal-100','bg-purple-50 border-purple-100','bg-blue-50 border-blue-100','bg-orange-50 border-orange-100','bg-pink-50 border-pink-100','bg-emerald-50 border-emerald-100'];
+                    return`
+                      <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-5 py-4">
+                          <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 ${bgColors[i%6]} border rounded-lg flex items-center justify-center text-sm">${s.icon}</div>
+                            <span class="font-medium text-gray-800">${s.name}</span>
+                          </div>
+                        </td>
+                        <td class="px-5 py-4 text-gray-600 text-center">S$${s.price.toFixed(2)}</td>
+                        <td class="px-5 py-4 text-center"><span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold">${required}</span></td>
+                        <td class="px-5 py-4 text-center"><span class="px-3 py-1 bg-teal-50 text-teal-700 rounded-full font-semibold">${additional}</span></td>
+                        <td class="px-5 py-4 text-center"><span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">${perDay}/day</span></td>
+                      </tr>
+                    `;
+                  }).join('');
+                })()}
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 py-4 bg-gradient-to-r from-gray-50 to-white border-t border-gray-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+              <p class="text-sm text-gray-600">AI simulation: Reaching trial target of <span class="font-semibold text-gray-800">S$${fmt(trialVal)}</span> requires roughly <span class="font-semibold text-purple-600">${window.totalAdditionalUnits}</span> extra service units.</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-white">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-emerald-100 border border-emerald-200 rounded-xl flex items-center justify-center">
+                <span class="text-lg">💬</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-800">Close the Gap with WhatsApp</h3>
+                <p class="text-xs text-gray-500">Send targeted campaigns to boost services</p>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
+                  <th class="px-5 py-3 font-medium">Service</th>
+                  <th class="px-5 py-3 font-medium text-center">Unit Price</th>
+                  <th class="px-5 py-3 font-medium text-center">Additional (Trial)</th>
+                  <th class="px-5 py-3 font-medium text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                ${(()=>{
+                  const services=[
+                    {name:'Sick Review',price:60,icon:'🩺'},
+                    {name:'Influenza Vaccination',price:45,icon:'💉'},
+                    {name:'Shingles Vaccination',price:280,icon:'🛡️'},
+                    {name:'Health Screening Package',price:180,icon:'📋'},
+                    {name:'NKF Renal Screening',price:25,icon:'🫘'},
+                    {name:'Buzud CGM Promo',price:90,icon:'📊'}
+                  ];
+                  const trialGap=Math.max(0,trialVal-mtd);
+                  const bgColors=['bg-teal-50 border-teal-100','bg-purple-50 border-purple-100','bg-blue-50 border-blue-100','bg-orange-50 border-orange-100','bg-pink-50 border-pink-100','bg-emerald-50 border-emerald-100'];
+                  return services.map((s,i)=>{
+                    const additional=Math.ceil(trialGap/s.price/services.length);
+                    return`
+                      <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-5 py-4">
+                          <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 ${bgColors[i%6]} border rounded-lg flex items-center justify-center text-sm">${s.icon}</div>
+                            <span class="font-medium text-gray-800">${s.name}</span>
+                          </div>
+                        </td>
+                        <td class="px-5 py-4 text-gray-600 text-center">S$${s.price.toFixed(2)}</td>
+                        <td class="px-5 py-4 text-center"><span class="px-3 py-1 bg-teal-50 text-teal-700 rounded-full font-semibold">${additional}</span></td>
+                        <td class="px-5 py-4 text-right">
+                          <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors shadow-sm">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            Send Campaign
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('');
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }else if(tab==='flow'){
+    const d=get();
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-blue-100 border border-blue-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><span class="text-sm font-medium text-gray-500">Avg Wait</span></div>
+            <p class="text-3xl font-bold text-gray-900">15 <span class="text-lg text-gray-400 font-normal">min</span></p>
+            <p class="text-sm text-amber-500 mt-2 font-medium">⚡ Efficiency target</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-teal-50 rounded-2xl p-6 border border-teal-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-teal-100 border border-teal-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div><span class="text-sm font-medium text-gray-500">Throughput</span></div>
+            <p class="text-3xl font-bold text-gray-900">31.5 <span class="text-lg text-gray-400 font-normal">min</span></p>
+            <p class="text-sm text-teal-600 mt-2 font-medium">Per patient avg</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-6 border border-purple-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-purple-100 border border-purple-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg></div><span class="text-sm font-medium text-gray-500">Total Patients</span></div>
+            <p class="text-3xl font-bold text-gray-900">${d.patients}</p>
+            <p class="text-sm text-purple-600 mt-2 font-medium">Yesterday</p>
+          </div>
+          <div class="bg-gradient-to-br from-white to-emerald-50 rounded-2xl p-6 border border-emerald-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-14 h-14 bg-emerald-100 border border-emerald-200 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><span class="text-sm font-medium text-gray-500">P95 Wait</span></div>
+            <p class="text-3xl font-bold text-gray-900">25 <span class="text-lg text-gray-400 font-normal">min</span></p>
+            <p class="text-sm text-emerald-600 mt-2 font-medium">95th percentile</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white"><h3 class="font-semibold text-gray-800 flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 rounded-full"></span>Doctor Efficiency</h3></div>
+          <div class="divide-y divide-gray-100">
+            ${d.doctors.map((doc,i)=>{
+              const wait=doc.patients>40?12:18,thru=doc.patients>40?28:35,p95=doc.patients>40?25:42;
+              const bgColors=['bg-teal-100 border-teal-200','bg-purple-100 border-purple-200','bg-blue-100 border-blue-200'];
+              const txtColors=['text-teal-600','text-purple-600','text-blue-600'];
+              return`
+              <div class="p-5 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center gap-4 mb-4">
+                  <div class="w-14 h-14 ${bgColors[i%3]} border rounded-2xl flex items-center justify-center ${txtColors[i%3]} font-bold text-lg">${doc.initials}</div>
+                  <div><p class="font-semibold text-gray-900">${doc.name}</p><p class="text-sm text-gray-500">${doc.patients} patients</p></div>
+                </div>
+                <div class="grid grid-cols-4 gap-3">
+                  <div class="bg-gradient-to-br from-blue-50 to-white rounded-xl p-3 text-center border border-blue-100"><p class="text-xs text-gray-500 font-medium">Patients</p><p class="text-lg font-bold text-blue-600">${doc.patients}</p></div>
+                  <div class="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-3 text-center border border-emerald-100"><p class="text-xs text-gray-500 font-medium">Wait</p><p class="text-lg font-bold text-emerald-600">${wait}m</p></div>
+                  <div class="bg-gradient-to-br from-amber-50 to-white rounded-xl p-3 text-center border border-amber-100"><p class="text-xs text-gray-500 font-medium">Throughput</p><p class="text-lg font-bold text-amber-600">${thru}m</p></div>
+                  <div class="bg-gradient-to-br from-rose-50 to-white rounded-xl p-3 text-center border border-rose-100"><p class="text-xs text-gray-500 font-medium">P95</p><p class="text-lg font-bold text-rose-600">${p95}m</p></div>
+                </div>
+              </div>
+            `}).join('')}
+          </div>
+        </div>
+      </div>`;
+  }else if(tab==='compare'){
+    // Get all clinics with data for comparison
+    const realClinicsWithData = clinics.filter(c => c.id !== 'all' && data[c.id]);
+    // Sort by MTD revenue descending
+    const sortedClinics = realClinicsWithData.sort((a,b) => (data[b.id]?.mtd||0) - (data[a.id]?.mtd||0));
+    const rankEmojis = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+    const cardColors = [
+      {bg:'bg-amber-100 border-amber-200',txt:'text-amber-700',cardBg:'from-amber-50 to-white',border:'border-amber-300',highlight:true},
+      {bg:'bg-gray-100 border-gray-200',txt:'text-gray-600',cardBg:'from-gray-50 to-white',border:'border-gray-200',highlight:false},
+      {bg:'bg-orange-100 border-orange-200',txt:'text-orange-600',cardBg:'from-orange-50 to-white',border:'border-orange-200',highlight:false},
+      {bg:'bg-teal-100 border-teal-200',txt:'text-teal-600',cardBg:'from-teal-50 to-white',border:'border-teal-200',highlight:false},
+      {bg:'bg-purple-100 border-purple-200',txt:'text-purple-600',cardBg:'from-purple-50 to-white',border:'border-purple-200',highlight:false},
+      {bg:'bg-blue-100 border-blue-200',txt:'text-blue-600',cardBg:'from-blue-50 to-white',border:'border-blue-200',highlight:false}
+    ];
+    
+    // If 'all' is selected, show all clinics; otherwise show only selected clinics
+    const clinicsToShow = selected.includes('all') ? sortedClinics : sortedClinics.filter(c => selected.includes(c.id));
+    
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        ${clinicsToShow.length === 0 ? '<div class="text-center py-12 text-gray-500">No clinics selected with data available</div>' : `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${clinicsToShow.map((c,i)=>{
+            const d = data[c.id];
+            const color = cardColors[i % cardColors.length];
+            const waitTime = Math.floor(10 + Math.random() * 8);
+            return`
+            <div class="bg-gradient-to-br ${color.cardBg} rounded-2xl border-2 ${i===0?color.border+' shadow-md':'border-gray-200'} shadow-sm p-6">
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-3">
+                  <span class="text-4xl">${rankEmojis[i] || '🏥'}</span>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <div class="w-10 h-10 ${color.bg} border rounded-xl flex items-center justify-center ${color.txt} font-bold text-sm">${c.short}</div>
+                      <p class="font-bold text-gray-900 text-lg">${c.short}</p>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">${c.name}</p>
+                  </div>
+                </div>
+              </div>
+              <p class="text-3xl font-bold text-teal-600 mb-4">S$${fmt(d.mtd)}</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white rounded-xl p-4 text-center border border-gray-100"><p class="text-xs text-gray-500 font-medium">Patients</p><p class="font-bold text-gray-900 text-lg mt-1">${d.patients}/day</p></div>
+                <div class="bg-white rounded-xl p-4 text-center border border-gray-100"><p class="text-xs text-gray-500 font-medium">Avg Wait</p><p class="font-bold text-gray-900 text-lg mt-1">${waitTime} min</p></div>
+              </div>
+            </div>
+          `}).join('')}
+        </div>
+        `}
+      </div>`;
+  }else if(tab==='services'){
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          ${services.map((s,i)=>{const bgColors=['bg-teal-100 border-teal-200','bg-purple-100 border-purple-200','bg-blue-100 border-blue-200'];const gradients=['from-teal-50 to-white','from-purple-50 to-white','from-blue-50 to-white'];return`
+            <div class="bg-gradient-to-br ${gradients[i%3]} rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 ${bgColors[i%3]} border rounded-2xl flex items-center justify-center"><span class="text-xl">${s.icon}</span></div>
+                  <span class="font-semibold text-gray-800">${s.name}</span>
+                </div>
+                <span class="px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">${s.trend}</span>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="bg-white rounded-xl p-4 text-center border border-gray-100"><p class="text-xs text-gray-500 font-medium">Today</p><p class="text-2xl font-bold text-teal-600 mt-1">${s.today}</p></div>
+                <div class="bg-white rounded-xl p-4 text-center border border-gray-100"><p class="text-xs text-gray-500 font-medium">7 Days</p><p class="text-2xl font-bold text-purple-600 mt-1">${s.week}</p></div>
+                <div class="bg-white rounded-xl p-4 text-center border border-gray-100"><p class="text-xs text-gray-500 font-medium">MTD</p><p class="text-2xl font-bold text-emerald-600 mt-1">${s.mtd}</p></div>
+              </div>
+            </div>
+          `}).join('')}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${promos.map((p,i)=>{const bgColors=['bg-emerald-100 border-emerald-200','bg-teal-100 border-teal-200'];const txtColors=['text-emerald-600','text-teal-600'];const gradients=['from-emerald-50 to-white','from-teal-50 to-white'];return`
+            <div class="bg-gradient-to-br ${gradients[i%2]} rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 ${bgColors[i%2]} border rounded-2xl flex items-center justify-center ${txtColors[i%2]} font-bold">${p.tag.substring(0,3)}</div>
+                  <div>
+                    <p class="font-semibold text-gray-800 text-lg">${p.name}</p>
+                    <p class="text-sm text-gray-500 mt-1">Signups: <span class="font-semibold text-gray-800">${p.signups}</span> &nbsp; Done: <span class="font-semibold text-emerald-600">${p.done}</span></p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-4xl font-bold text-teal-600">${p.percent}%</p>
+                  <div class="w-24 bg-gray-200 rounded-full h-2.5 mt-2"><div class="bg-gradient-to-r from-teal-400 to-emerald-500 h-2.5 rounded-full" style="width:${p.percent}%"></div></div>
+                </div>
+              </div>
+            </div>
+          `}).join('')}
+        </div>
+      </div>`;
+  }else if(tab==='healthiersg'){
+    const isAll = selected.includes('all');
+    const realClinicsWithData = clinics.filter(c => c.id !== 'all' && data[c.id]);
+    const clinicsToShow = isAll ? realClinicsWithData : realClinicsWithData.filter(c => selected.includes(c.id));
+    const plansDue = isAll ? 128 * clinicsToShow.length : (clinicsToShow.length * 128);
+    const reportsDue = isAll ? 44 * clinicsToShow.length : (clinicsToShow.length * 44);
+    const displayName = isAll ? 'All Clinics' : (clinicsToShow.length === 1 ? clinicsToShow[0]?.name : `${clinicsToShow.length} Clinics`);
+    const displayShort = isAll ? 'ALL' : (clinicsToShow.length === 1 ? clinicsToShow[0]?.short : `${clinicsToShow.length}`);
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="bg-gradient-to-br from-white to-rose-50 rounded-2xl border border-rose-100 shadow-sm p-6">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-16 h-16 ${isAll ? 'bg-purple-100 border-purple-200' : 'bg-rose-100 border-rose-200'} rounded-2xl flex items-center justify-center"><span class="text-3xl">${isAll ? '🏢' : '🏥'}</span></div>
+            <div><p class="font-bold text-gray-900 text-xl">${displayShort}</p><p class="text-sm text-gray-500">${displayName}</p></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gradient-to-br from-teal-50 to-white rounded-2xl p-6 text-center border border-teal-100">
+              <div class="w-14 h-14 bg-teal-100 border border-teal-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><svg class="w-7 h-7 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+              <p class="text-sm text-gray-600 font-medium">Plans Due (3m)</p>
+              <p class="text-5xl font-bold text-teal-600 mt-2">${plansDue}</p>
+            </div>
+            <div class="bg-gradient-to-br from-rose-50 to-white rounded-2xl p-6 text-center border border-rose-100">
+              <div class="w-14 h-14 bg-rose-100 border border-rose-200 rounded-2xl flex items-center justify-center mx-auto mb-4"><svg class="w-7 h-7 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+              <p class="text-sm text-gray-600 font-medium">Reports Due (1m)</p>
+              <p class="text-5xl font-bold text-rose-600 mt-2">${reportsDue}</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }else if(tab==='whatsapp'){
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          ${[{label:'Sent',value:'1,240',sub:'MTD',bg:'from-emerald-50 to-white',border:'border-emerald-100',iconBg:'bg-emerald-100 border-emerald-200',icon:'text-emerald-600'},{label:'Delivered',value:'90%',sub:'1,112',bg:'from-teal-50 to-white',border:'border-teal-100',iconBg:'bg-teal-100 border-teal-200',icon:'text-teal-600'},{label:'Read',value:'73%',sub:'892',bg:'from-blue-50 to-white',border:'border-blue-100',iconBg:'bg-blue-100 border-blue-200',icon:'text-blue-600'},{label:'Replied',value:'21%',sub:'268',bg:'from-purple-50 to-white',border:'border-purple-100',iconBg:'bg-purple-100 border-purple-200',icon:'text-purple-600'},{label:'Avg Response',value:'2h 14m',sub:'',bg:'from-amber-50 to-white',border:'border-amber-100',iconBg:'bg-amber-100 border-amber-200',icon:'text-amber-600'}].map(s=>`
+            <div class="bg-gradient-to-br ${s.bg} rounded-2xl p-5 border ${s.border} shadow-sm text-center">
+              <div class="w-12 h-12 ${s.iconBg} border rounded-2xl flex items-center justify-center mx-auto mb-4"><svg class="w-6 h-6 ${s.icon}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
+              <p class="text-xs text-gray-500 font-medium">${s.label}</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">${s.value}</p>
+              ${s.sub?`<p class="text-xs text-gray-400 mt-1">${s.sub}</p>`:''}
+            </div>
+          `).join('')}
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-white"><h3 class="font-semibold text-gray-800 flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span>Recent Messages</h3></div>
+          <div class="divide-y divide-gray-100">
+            ${[{name:'John T',coach:'Sulin',time:'Today 11:05',status:'Replied',statusBg:'bg-emerald-100 text-emerald-700 border-emerald-200'},{name:'Mdm Wong',coach:'Aida',time:'Yesterday',status:'Read',statusBg:'bg-blue-100 text-blue-700 border-blue-200'},{name:'Mr Lim',coach:'Hana',time:'Yesterday',status:'Sent',statusBg:'bg-gray-100 text-gray-600 border-gray-200'}].map(m=>`
+              <div class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 bg-gradient-to-br from-gray-100 to-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-600 font-bold">${m.name.split(' ').map(n=>n[0]).join('')}</div>
+                  <div><p class="font-semibold text-gray-800">${m.name}</p><p class="text-sm text-gray-500">${m.coach} • ${m.time}</p></div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="px-3 py-1.5 ${m.statusBg} border text-xs font-semibold rounded-full">${m.status}</span>
+                  <button class="px-4 py-1.5 bg-teal-50 text-teal-600 border border-teal-200 text-xs font-semibold rounded-full hover:bg-teal-100 transition-colors">Open</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+  }else if(tab==='askeva'){
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl border border-purple-100 shadow-sm p-6">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 border border-purple-200 rounded-full flex items-center justify-center shadow-inner"><span class="text-3xl">✨</span></div>
+            <div><p class="font-bold text-gray-900 text-xl">Eva</p><p class="text-sm text-gray-500 flex items-center gap-2"><span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>Online • Ready to help</p></div>
+          </div>
+          <div class="bg-white border border-gray-100 rounded-2xl p-5 mb-6 shadow-sm">
+            <p class="text-gray-700">Hi! I'm Eva, your Enterprise Virtual Assistant. How can I help you today?</p>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            ${[{icon:'📊',label:'Revenue summary',bg:'from-teal-50 to-white',border:'border-teal-100'},{icon:'👥',label:'Patient stats',bg:'from-purple-50 to-white',border:'border-purple-100'},{icon:'📅',label:'Appointments',bg:'from-blue-50 to-white',border:'border-blue-100'},{icon:'💉',label:'Vaccinations',bg:'from-emerald-50 to-white',border:'border-emerald-100'},{icon:'📈',label:'Insights',bg:'from-amber-50 to-white',border:'border-amber-100'},{icon:'🏥',label:'Clinic compare',bg:'from-rose-50 to-white',border:'border-rose-100'}].map(q=>`
+              <button class="flex items-center gap-3 p-4 bg-gradient-to-br ${q.bg} border ${q.border} rounded-xl hover:shadow-md transition-all text-left">
+                <div class="w-10 h-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm"><span class="text-lg">${q.icon}</span></div>
+                <span class="text-sm text-gray-700 font-medium">${q.label}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="flex gap-3">
+            <input type="text" placeholder="Ask Eva anything..." class="flex-1 px-5 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white shadow-sm">
+            <button class="px-6 py-3.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-medium flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+              Send
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }else if(tab==='settings'){
+    const selClinics=selected.map(id=>({id,clinic:clinics.find(c=>c.id===id)?.short,name:clinics.find(c=>c.id===id)?.name,target:data[id]?.target||150000}));
+    const bgColors=['bg-teal-100 border-teal-200','bg-purple-100 border-purple-200','bg-orange-100 border-orange-200','bg-blue-100 border-blue-200','bg-pink-100 border-pink-200','bg-emerald-100 border-emerald-200'];
+    const txtColors=['text-teal-600','text-purple-600','text-orange-600','text-blue-600','text-pink-600','text-emerald-600'];
+    document.getElementById('content').innerHTML=`
+      <div class="space-y-6">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white"><h3 class="font-semibold text-gray-800 flex items-center gap-2"><span class="w-2 h-2 bg-teal-500 rounded-full"></span>Yearly Revenue Targets</h3></div>
+          <div class="p-5 space-y-3">
+            ${selClinics.map((t,i)=>`
+              <div class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:shadow-sm transition-all">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 ${bgColors[i%6]} border rounded-xl flex items-center justify-center ${txtColors[i%6]} font-bold">${t.clinic}</div>
+                  <div><p class="font-semibold text-gray-800">${t.clinic}</p><p class="text-xs text-gray-500">${t.name}</p></div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-500 text-sm">S$</span>
+                  <input type="number" id="target-${t.id}" value="${t.target}" step="10000" min="0" 
+                    class="w-32 px-4 py-2.5 border border-gray-200 rounded-xl text-right font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+                    onchange="updateTarget('${t.id}', this.value)">
+                  <span class="text-gray-500 text-sm">/month</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="px-6 py-4 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-gray-500">Changes are saved automatically</p>
+              <button onclick="resetTargets()" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-xl transition-colors">Reset to Defaults</button>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white"><h3 class="font-semibold text-gray-800 flex items-center gap-2"><span class="w-2 h-2 bg-purple-500 rounded-full"></span>Target Summary</h3></div>
+          <div class="p-5">
+            <div class="grid grid-cols-${Math.min(selClinics.length,3)} gap-4">
+              ${selClinics.map((t,i)=>{
+                const d=data[t.id];
+                const pct=((d.mtd/d.target)*100).toFixed(1);
+                return`
+                <div class="text-center p-5 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100">
+                  <div class="w-12 h-12 ${bgColors[i%6]} border rounded-xl flex items-center justify-center ${txtColors[i%6]} font-bold mx-auto mb-3">${t.clinic}</div>
+                  <p class="text-3xl font-bold text-gray-900">${pct}%</p>
+                  <p class="text-sm text-gray-500 mt-1">S$${fmt(d.mtd)} / S$${(d.target/1000)}k</p>
+                  <div class="mt-3 bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-gradient-to-r from-teal-400 to-emerald-500 h-full rounded-full transition-all" style="width:${Math.min(pct,100)}%"></div>
+                  </div>
+                </div>
+              `}).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }else{
+    document.getElementById('content').innerHTML=`<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center"><div class="w-20 h-20 bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg"><svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><h3 class="text-xl font-semibold text-gray-800 mb-2">${tabs.find(t=>t.id===tab)?.label}</h3><p class="text-gray-500">Content coming soon...</p></div>`;
+  }
+}
+document.addEventListener('DOMContentLoaded',render);
+document.addEventListener('click',e=>{if(open&&!e.target.closest('#dropdown')&&!e.target.closest('button[onclick="toggleDropdown()"]')){open=false;document.getElementById('dropdown').classList.remove('open');document.getElementById('chevron').style.transform='';}});
+</script>
+</body>
+</html>
